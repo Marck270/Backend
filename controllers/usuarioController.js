@@ -83,7 +83,7 @@ export const login = async (req, res) => {
     res.json({
       msg: "Login exitoso",
       usuario: usuarioSinSensibles,
-      token: generarToken()
+      token: generarTokenJWT(usuarioSinSensibles)
     });
 
   } catch (error) {
@@ -227,4 +227,20 @@ export const confirmar = async (req, res) => {
         console.error("Error al confirmar usuario:", error);
         return res.status(500).json({ msg: "Error en el servidor" });
     }
+};
+
+export const perfil = async (req, res) => {
+  try {
+    const usuario = await Usuario.findByPk(req.user.id, {
+      attributes: { exclude: ["password", "token"] }
+    });
+    
+    if (!usuario) {
+      return res.status(404).json({ msg: "Usuario no encontrado" });
+    }
+    
+    res.json(usuario);
+  } catch (error) {
+    res.status(500).json({ msg: "Error del servidor" });
+  }
 };

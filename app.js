@@ -5,15 +5,23 @@ import usuarioRouter from "./routes/usuarioRouter.js";
 
 const app = express();
 
-// Formatos compatibles
-app.use(cors());
-app.use(express.json()); // Para recibir JSON
+// Configurar CORS específicamente
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
 
-// rutas
-app.use('/', router); // Ejemplo de ruta
-app.use('/api/usuario/', usuarioRouter); // Para crear usuario
+app.use(cors(corsOptions));
+app.use(express.json());
 
-// Ruta inicial para pruebas
+// Rutas públicas
+app.use('/api/usuario/', usuarioRouter);
+
+// Rutas protegidas
+app.use('/api', router); // Agregar middleware authRequired aquí
+
 app.get("/", (req, res) => {
   res.json({ message: "API funcionando correctamente" });
 });
