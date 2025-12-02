@@ -1,9 +1,19 @@
+// routes/usuarioRouter.js
 import express from "express";
-import { registrar, listar, usuarioPorId, actualizar, eliminar, confirmar } from "../controllers/usuarioController.js";
+import { 
+  registrar, 
+  login, // AÑADIR
+  listar, 
+  usuarioPorId, 
+  actualizar, 
+  eliminar, 
+  confirmar 
+} from "../controllers/usuarioController.js";
 
 const usuarioRouter = express.Router();
 
 usuarioRouter.post("/registrar", registrar);
+usuarioRouter.post("/login", login); // NUEVA RUTA
 usuarioRouter.get("/listar", listar);
 usuarioRouter.get("/usuarioPorId/:id", usuarioPorId);
 usuarioRouter.put("/actualizar/:id", actualizar);
