@@ -78,4 +78,28 @@ router.get('/tipo/:id', findOneTpo); // Pública
 router.put('/tipo/actualizar/:id', authRequired, adminRequired, updateTpo);
 router.delete('/tipo/borrar/:id', authRequired, adminRequired, deleteTpo);
 
+router.get('/health', async (req, res) => {
+  try {
+    const dbStatus = await sequelize.authenticate();
+    
+    // Contar usuarios
+    const usuariosCount = await Usuario.count();
+    
+    res.json({
+      status: 'healthy',
+      database: 'connected',
+      users_count: usuariosCount,
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'unhealthy',
+      database: 'error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 export default router;
