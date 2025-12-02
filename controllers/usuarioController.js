@@ -1,8 +1,12 @@
-// controllers/usuarioController.js - VERSIÓN COMPLETA Y CORREGIDA
+// controllers/usuarioController.js - VERSIÓN CORREGIDA
 import bcrypt from 'bcrypt';
 import Usuario from "../models/Usuario.js";
-import { generarToken } from "../helpers/Token.js";
-import { hashPassword } from "../helpers/Password.js";
+import { 
+  generarToken, 
+  generarTokenJWT, 
+  verificarTokenJWT 
+} from "../helpers/Token.js";
+import { hashPassword, verificarPassword } from "../helpers/Password.js";
 import { correoRegistro } from "../helpers/Correo.js";
 
 // Create - REGISTRO DE USUARIO
@@ -16,21 +20,22 @@ export const registrar = async (req, res) => {
       return res.status(400).json({ msg: "El correo ya está registrado" });
     }
 
-    const token = generarToken();
+    const tokenConfirmacion = generarToken(); // Token para confirmar email
 
     const nuevoUsuario = await Usuario.create({
       nombre,
       correo,
       password: await hashPassword(password),
-      token,
-      tipo: tipo || "comprador"
+      token: tokenConfirmacion,
+      tipo: tipo || "comprador",
+      confirmar: false
     });
 
     // Enviar correo
     await correoRegistro({
       nombre,
       correo,
-      token
+      token: tokenConfirmacion
     });
 
     res.json({ 
@@ -44,8 +49,11 @@ export const registrar = async (req, res) => {
     });
 
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ msg: "Error del servidor" });
+    console.log("Error en registro:", error);
+    res.status(500).json({ 
+      msg: "Error del servidor",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -71,7 +79,7 @@ export const login = async (req, res) => {
       return res.status(400).json({ msg: "Contraseña incorrecta" });
     }
 
-    // Excluir campos sensibles
+    // Crear usuario sin datos sensibles
     const usuarioSinSensibles = {
       id_usr: usuario.id_usr,
       nombre: usuario.nombre,
@@ -80,15 +88,52 @@ export const login = async (req, res) => {
       confirmar: usuario.confirmar
     };
 
+    // Generar token JWT para autenticación
+    const tokenJWT = generarTokenJWT(usuarioSinSensibles);
+
     res.json({
       msg: "Login exitoso",
       usuario: usuarioSinSensibles,
-      token: generarTokenJWT(usuarioSinSensibles)
+      token: tokenJWT
     });
 
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ msg: "Error del servidor" });
+    console.log("Error en login:", error);
+    res.status(500).json({ 
+      msg: "Error del servidor",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Confirmar correo
+export const confirmar = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    const usuario = await Usuario.findOne({ where: { token } });
+
+    if (!usuario) {
+      return res.status(400).json({ msg: "Token inválido o expirado" });
+    }
+
+    usuario.confirmar = true;
+    usuario.token = null;
+    await usuario.save();
+
+    res.json({ 
+      msg: "La cuenta fue confirmada correctamente",
+      usuario: {
+        id: usuario.id_usr,
+        nombre: usuario.nombre,
+        correo: usuario.correo,
+        tipo: usuario.tipo
+      }
+    });
+    
+  } catch (error) {
+    console.error("Error al confirmar usuario:", error);
+    return res.status(500).json({ msg: "Error en el servidor" });
   }
 };
 
@@ -198,49 +243,38 @@ export const eliminar = async (req, res) => {
     }
 };
 
-// Confirmar correo - ¡ESTA FUNCIÓN DEBE ESTAR PRESENTE!
-export const confirmar = async (req, res) => {
-    try {
-        const { token } = req.params;
-
-        const usuario = await Usuario.findOne({ where: { token } });
-
-        if (!usuario) {
-            return res.status(400).json({ msg: "Token inválido o expirado" });
-        }
-
-        usuario.confirmar = true;
-        usuario.token = null;
-        await usuario.save();
-
-        res.json({ 
-            msg: "La cuenta fue confirmada correctamente",
-            usuario: {
-                id: usuario.id_usr,
-                nombre: usuario.nombre,
-                correo: usuario.correo,
-                tipo: usuario.tipo
-            }
-        });
-        
-    } catch (error) {
-        console.error("Error al confirmar usuario:", error);
-        return res.status(500).json({ msg: "Error en el servidor" });
-    }
-};
-
-export const perfil = async (req, res) => {
+// Verificar token
+export const verificarToken = async (req, res) => {
   try {
-    const usuario = await Usuario.findByPk(req.user.id, {
-      attributes: { exclude: ["password", "token"] }
-    });
+    const token = req.headers.authorization?.split(' ')[1];
     
-    if (!usuario) {
-      return res.status(404).json({ msg: "Usuario no encontrado" });
+    if (!token) {
+      return res.status(401).json({ msg: 'No hay token' });
     }
+
+    const decoded = verificarTokenJWT(token);
     
-    res.json(usuario);
+    if (!decoded) {
+      return res.status(401).json({ msg: 'Token inválido' });
+    }
+
+    // Buscar usuario en base de datos
+    const usuario = await Usuario.findByPk(decoded.id, {
+      attributes: { exclude: ['password', 'token'] }
+    });
+
+    if (!usuario) {
+      return res.status(404).json({ msg: 'Usuario no encontrado' });
+    }
+
+    res.json({
+      msg: 'Token válido',
+      usuario,
+      token: token // Podrías renovarlo si quieres
+    });
+
   } catch (error) {
-    res.status(500).json({ msg: "Error del servidor" });
+    console.error('Error verificando token:', error);
+    res.status(500).json({ msg: 'Error del servidor' });
   }
 };

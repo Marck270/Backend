@@ -1,3 +1,4 @@
+// helpers/Password.js
 import bcrypt from "bcrypt";
 
 export const hashPassword = async (password) => {
@@ -7,4 +8,10 @@ export const hashPassword = async (password) => {
 
 export const verificarPassword = async (password, hash) => {
   return await bcrypt.compare(password, hash);
+};
+
+// Para compatibilidad
+export default {
+  hashPassword,
+  verificarPassword
 };
