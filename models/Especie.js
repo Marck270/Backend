@@ -48,7 +48,9 @@ const Especie = sequelize.define('Especie', {
 
 }, {
     tableName: 'Especie',
-    timestamps: false
+    timestamps: true,
+    createdAt: 'created_at', 
+    updatedAt: 'updated_at' 
 });
 
 export default Especie;
