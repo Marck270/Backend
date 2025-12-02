@@ -48,9 +48,7 @@ const Especie = sequelize.define('Especie', {
 
 }, {
     tableName: 'Especie',
-    timestamps: true, // Agregar createdAt y updatedAt
-    createdAt: 'created_at',
-    updatedAt: 'updated_at'
+    timestamps: false
 });
 
 export default Especie;
