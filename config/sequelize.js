@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-dotenv.config();
+// dotenv.config();
 import Sequelize from "sequelize";
 
 const sequelize = new Sequelize("postgresql://dblonja_user:fzOzV6ECRBWpr4MWpVSX4zpE4ncI2h7n@dpg-d4mlia8gjchc73bcohe0-a.oregon-postgres.render.com/dblonja",
