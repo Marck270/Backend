@@ -1,3 +1,4 @@
+// models/Especie.js
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/sequelize.js';
 
@@ -8,33 +9,48 @@ const Especie = sequelize.define('Especie', {
         primaryKey: true
     },
 
-    nombre:{
+    nombre: {
         type: DataTypes.STRING(25),
         allowNull: false
     },
 
-    id_lte:{
-        type:DataTypes.INTEGER,
+    id_lte: {
+        type: DataTypes.INTEGER,
         allowNull: false,
     },
 
-    id_tpo:{
-        type:DataTypes.SMALLINT,
+    id_tpo: {
+        type: DataTypes.SMALLINT,
         allowNull: false,
     },
 
-    disponibilidad:{
-        type:DataTypes.BOOLEAN,
-        allowNull: false
+    disponibilidad: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
     },
 
-    imagen:{
-        type:DataTypes.STRING(100),
-        allowNull:false
+    // Ahora guardamos la URL de Cloudinary y el public_id
+    imagen_url: {
+        type: DataTypes.STRING(500),
+        allowNull: true
+    },
+
+    imagen_public_id: {
+        type: DataTypes.STRING(100),
+        allowNull: true
+    },
+
+    descripcion: {
+        type: DataTypes.TEXT,
+        allowNull: true
     }
+
 }, {
-    tableName: 'Especie',  // nombre real de la tabla
-    timestamps: false        // si no tienes createdAt/updatedAt
+    tableName: 'Especie',
+    timestamps: true, // Agregar createdAt y updatedAt
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
 });
 
 export default Especie;
