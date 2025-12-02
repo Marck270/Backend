@@ -1,5 +1,5 @@
-// controllers/usuarioController.js - VERSIÓN CORREGIDA
-import bcrypt from 'bcrypt'; // AÑADIR ESTA IMPORTACIÓN
+// controllers/usuarioController.js - VERSIÓN COMPLETA Y CORREGIDA
+import bcrypt from 'bcrypt';
 import Usuario from "../models/Usuario.js";
 import { generarToken } from "../helpers/Token.js";
 import { hashPassword } from "../helpers/Password.js";
@@ -7,7 +7,7 @@ import { correoRegistro } from "../helpers/Correo.js";
 
 // Create - REGISTRO DE USUARIO
 export const registrar = async (req, res) => {
-  const { nombre, correo, password, tipo } = req.body; // Agregar tipo
+  const { nombre, correo, password, tipo } = req.body;
 
   try {
     // Verificar si existe
@@ -23,7 +23,7 @@ export const registrar = async (req, res) => {
       correo,
       password: await hashPassword(password),
       token,
-      tipo: tipo || "comprador" // Usar tipo si viene, sino por defecto "comprador"
+      tipo: tipo || "comprador"
     });
 
     // Enviar correo
@@ -49,7 +49,7 @@ export const registrar = async (req, res) => {
   }
 };
 
-// Login - AGREGAR ESTE MÉTODO (no lo tenías)
+// Login
 export const login = async (req, res) => {
   const { correo, password } = req.body;
 
@@ -83,7 +83,7 @@ export const login = async (req, res) => {
     res.json({
       msg: "Login exitoso",
       usuario: usuarioSinSensibles,
-      token: generarToken() // Generar token de sesión
+      token: generarToken()
     });
 
   } catch (error) {
@@ -92,7 +92,43 @@ export const login = async (req, res) => {
   }
 };
 
-// Update - CORREGIDO
+// Get all
+export const listar = async (req, res) => {
+    try {
+        const usuarios = await Usuario.findAll({
+            attributes: { exclude: ["password", "token"] }
+        });
+
+        res.json(usuarios);
+
+    } catch (error) {
+        console.error("Error al listar usuarios:", error);
+        res.status(500).json({ msg: "Error en el servidor" });
+    }
+};
+
+// Get by id
+export const usuarioPorId = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const usuario = await Usuario.findByPk(id, {
+            attributes: { exclude: ["password", "token"] }
+        });
+
+        if (!usuario) {
+            return res.status(404).json({ msg: "Usuario no encontrado" });
+        }
+
+        res.json(usuario);
+
+    } catch (error) {
+        console.error("Error al obtener usuario:", error);
+        res.status(500).json({ msg: "Error en el servidor" });
+    }
+};
+
+// Update
 export const actualizar = async (req, res) => {
   try {
     const { id } = req.params;
@@ -133,4 +169,62 @@ export const actualizar = async (req, res) => {
   }
 };
 
-// Los demás métodos (listar, usuarioPorId, eliminar, confirmar) se mantienen igual
+// Eliminar usuario
+export const eliminar = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Buscar usuario
+        const usuario = await Usuario.findByPk(id);
+
+        if (!usuario) {
+            return res.status(404).json({
+                msg: "Usuario no encontrado"
+            });
+        }
+
+        // Eliminar registro
+        await usuario.destroy();
+
+        return res.json({
+            msg: "Usuario eliminado correctamente"
+        });
+
+    } catch (error) {
+        console.error("Error al eliminar usuario:", error);
+        return res.status(500).json({
+            msg: "Error en el servidor"
+        });
+    }
+};
+
+// Confirmar correo - ¡ESTA FUNCIÓN DEBE ESTAR PRESENTE!
+export const confirmar = async (req, res) => {
+    try {
+        const { token } = req.params;
+
+        const usuario = await Usuario.findOne({ where: { token } });
+
+        if (!usuario) {
+            return res.status(400).json({ msg: "Token inválido o expirado" });
+        }
+
+        usuario.confirmar = true;
+        usuario.token = null;
+        await usuario.save();
+
+        res.json({ 
+            msg: "La cuenta fue confirmada correctamente",
+            usuario: {
+                id: usuario.id_usr,
+                nombre: usuario.nombre,
+                correo: usuario.correo,
+                tipo: usuario.tipo
+            }
+        });
+        
+    } catch (error) {
+        console.error("Error al confirmar usuario:", error);
+        return res.status(500).json({ msg: "Error en el servidor" });
+    }
+};
